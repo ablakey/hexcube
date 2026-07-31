@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>9×9×9 Cube of Cubes</title>
+    <title>Hexcube</title>
     <style>
       html,
       body {
@@ -48,10 +48,15 @@
       #info b {
         color: #fff;
       }
-      #toggle {
+      #controls {
         position: absolute;
-        top: 40px;
-        left: 10px;
+        bottom: 68px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+      }
+      #toggle {
         padding: 8px 12px;
         font-family: system-ui, sans-serif;
         font-size: 13px;
@@ -65,9 +70,6 @@
         background: #383838;
       }
       #reset {
-        position: absolute;
-        top: 40px;
-        left: 320px;
         padding: 8px 12px;
         font-family: system-ui, sans-serif;
         font-size: 13px;
@@ -82,16 +84,18 @@
       }
       #hover {
         position: absolute;
-        top: 80px;
-        left: 10px;
-        padding: 6px 10px;
+        top: 0;
+        left: 0;
+        padding: 4px 8px;
         font-family: ui-monospace, monospace;
         font-size: 13px;
         color: #eee;
-        background: rgba(0, 0, 0, 0.55);
+        background: rgba(0, 0, 0, 0.75);
         border-radius: 4px;
         pointer-events: none;
         user-select: none;
+        display: none;
+        white-space: nowrap;
       }
       #explainer {
         position: absolute;
@@ -132,9 +136,11 @@
         ><b>Drag</b> to rotate &nbsp;•&nbsp; <b>Scroll</b> to zoom &nbsp;•&nbsp; <b>Right-drag</b> to pan</span
       >
     </div>
-    <button id="toggle">Hide cubes whose coords don't sum to 0</button>
-    <button id="reset">Reset view</button>
-    <div id="hover">Hover a cube…</div>
+    <div id="controls">
+      <button id="toggle">Hide non-zero-sum cubes</button>
+      <button id="reset">Reset view</button>
+    </div>
+    <div id="hover"></div>
 
     <aside id="explainer">
       <h2>A hex grid is a slice of a cube</h2>
@@ -200,10 +206,16 @@
       // Remember the initial view for the reset button.
       const INITIAL_CAMERA_POS = camera.position.clone();
       const INITIAL_TARGET = controls.target.clone();
+      const INITIAL_ZOOM = camera.zoom;
+
+      // Smoothly LERP back to the initial view instead of snapping.
+      let resetting = false;
       document.getElementById("reset").addEventListener("click", () => {
-        camera.position.copy(INITIAL_CAMERA_POS);
-        controls.target.copy(INITIAL_TARGET);
-        controls.update();
+        resetting = true;
+      });
+      // Cancel the reset animation the moment the user interacts.
+      controls.addEventListener("start", () => {
+        resetting = false;
       });
 
       // Lights
@@ -264,9 +276,7 @@
             cube.visible = !othersHidden;
           }
         }
-        toggleButton.textContent = othersHidden
-          ? "Show cubes whose coords don't sum to 0"
-          : "Hide cubes whose coords don't sum to 0";
+        toggleButton.textContent = othersHidden ? "Show non-zero-sum cubes" : "Hide non-zero-sum cubes";
       });
 
       // Raycasting to report the coordinate of the hovered cube.
@@ -274,17 +284,21 @@
       const pointer = new THREE.Vector2();
       const hoverReadout = document.getElementById("hover");
       let hasPointer = false;
+      let lastClientX = 0;
+      let lastClientY = 0;
 
       renderer.domElement.addEventListener("pointermove", (event) => {
         const rect = renderer.domElement.getBoundingClientRect();
         pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        lastClientX = event.clientX;
+        lastClientY = event.clientY;
         hasPointer = true;
       });
 
       renderer.domElement.addEventListener("pointerleave", () => {
         hasPointer = false;
-        hoverReadout.textContent = "Hover a cube…";
+        hoverReadout.style.display = "none";
       });
 
       // Track the currently highlighted cube so we can restore it.
@@ -315,6 +329,28 @@
 
       function animate() {
         requestAnimationFrame(animate);
+
+        // Smoothly ease the camera back to its initial view when resetting.
+        if (resetting) {
+          const t = 0.12;
+          camera.position.lerp(INITIAL_CAMERA_POS, t);
+          controls.target.lerp(INITIAL_TARGET, t);
+          camera.zoom += (INITIAL_ZOOM - camera.zoom) * t;
+          camera.updateProjectionMatrix();
+
+          const done =
+            camera.position.distanceTo(INITIAL_CAMERA_POS) < 0.01 &&
+            controls.target.distanceTo(INITIAL_TARGET) < 0.01 &&
+            Math.abs(camera.zoom - INITIAL_ZOOM) < 0.001;
+          if (done) {
+            camera.position.copy(INITIAL_CAMERA_POS);
+            controls.target.copy(INITIAL_TARGET);
+            camera.zoom = INITIAL_ZOOM;
+            camera.updateProjectionMatrix();
+            resetting = false;
+          }
+        }
+
         controls.update();
 
         if (hasPointer) {
@@ -324,12 +360,15 @@
           if (hit) {
             const p = hit.object.position;
             hoverReadout.textContent = `(${p.x}, ${p.y}, ${p.z})`;
+            hoverReadout.style.display = "block";
+            hoverReadout.style.transform = `translate(${lastClientX + 14}px, ${lastClientY + 14}px)`;
             setHovered(hit.object);
           } else {
-            hoverReadout.textContent = "Hover a cube…";
+            hoverReadout.style.display = "none";
             setHovered(null);
           }
         } else {
+          hoverReadout.style.display = "none";
           setHovered(null);
         }
 
