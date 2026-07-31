@@ -14,13 +14,39 @@
       }
       #info {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        color: #ddd;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px;
+        color: #fff;
         font-family: system-ui, sans-serif;
-        font-size: 13px;
+        font-size: 14px;
+        font-weight: 500;
+        background: rgba(20, 20, 20, 0.8);
+        border: 1px solid #666;
+        border-radius: 999px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
         pointer-events: none;
         user-select: none;
+      }
+      #info .badge {
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #111;
+        background: #7fd1ff;
+        border-radius: 999px;
+      }
+      #info .keys {
+        color: #cde;
+      }
+      #info b {
+        color: #fff;
       }
       #toggle {
         position: absolute;
@@ -67,13 +93,65 @@
         pointer-events: none;
         user-select: none;
       }
+      #explainer {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        max-width: 300px;
+        padding: 14px 16px;
+        color: #ddd;
+        font-family: system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid #444;
+        border-radius: 6px;
+        user-select: none;
+      }
+      #explainer h2 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        color: #fff;
+      }
+      #explainer p {
+        margin: 0 0 8px;
+      }
+      #explainer p:last-child {
+        margin-bottom: 0;
+      }
+      #explainer code {
+        font-family: ui-monospace, monospace;
+        color: #9ecbff;
+      }
     </style>
   </head>
   <body>
-    <div id="info">Drag to rotate • Scroll to zoom • Right-drag to pan · always looking at (0,0,0)</div>
+    <div id="info">
+      <span class="badge">Interactive</span>
+      <span class="keys"
+        ><b>Drag</b> to rotate &nbsp;•&nbsp; <b>Scroll</b> to zoom &nbsp;•&nbsp; <b>Right-drag</b> to pan</span
+      >
+    </div>
     <button id="toggle">Hide cubes whose coords don't sum to 0</button>
     <button id="reset">Reset view</button>
     <div id="hover">Hover a cube…</div>
+
+    <aside id="explainer">
+      <h2>A hex grid is a slice of a cube</h2>
+      <p>Give every small cube a 3D coordinate <code>(x, y, z)</code>.</p>
+      <p>Keep only the cubes where <code>x + y + z = 0</code> and throw the rest away.</p>
+      <p>
+        That single diagonal slice through the 9×9×9 block is a flat, tilted plane — and its cells line up as a perfect
+        <strong>2D hexagonal grid</strong>. The slice's overall outline is itself a regular hexagon, so you get a big
+        hexagon <em>made of</em> small hexagons.
+      </p>
+      <p>
+        The hexagons aren't drawn — they're just the cubes themselves: a cube <em>projected</em> onto a 2D plane (viewed
+        straight down the <code>(1, 1, 1)</code> diagonal) has a six-sided silhouette. That direction is exactly the
+        plane's normal — not a coincidence — which is why the slice appears face-on and every cube reads as a hexagon.
+      </p>
+      <p>So hex coordinates aren't special: they're just cube coordinates constrained to sum to zero.</p>
+    </aside>
 
     <script type="importmap">
       {
